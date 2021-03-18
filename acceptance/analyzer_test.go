@@ -49,6 +49,7 @@ func TestAnalyzer(t *testing.T) {
 	h.AssertNil(t, err)
 	defer os.RemoveAll(dockerConfigDir)
 
+	// create readonly/readwrite registries with shared volume to allow writing to readonly
 	regVolumeID := "test-registry-volume-" + h.RandString(10)
 	registry = ih.NewDockerRegistry(ih.WithAuth(dockerConfigDir), ih.WithSharedStorageVolume(regVolumeID))
 	registry.Start(t)
@@ -390,6 +391,7 @@ func testAnalyzer(t *testing.T, when spec.G, it spec.S) {
 								"--build-arg", "metadata="+metadata,
 							)
 
+							// get readonly version of reponame
 							noAuthRegCacheImage = noAuthRegistry.RepoName(imageName)
 						})
 
@@ -603,7 +605,7 @@ func testAnalyzer(t *testing.T, when spec.G, it spec.S) {
 						"--build-arg", "fromImage="+containerBaseImage,
 						"--build-arg", "metadata="+metadata,
 					)
-
+					// get readonly version of reponame
 					noAuthRegAppImage = noAuthRegistry.RepoName(imageName)
 				})
 
@@ -730,6 +732,7 @@ func testAnalyzer(t *testing.T, when spec.G, it spec.S) {
 							"--build-arg", "metadata="+metadata,
 						)
 
+						// get readonly version of reponame
 						noAuthRegCacheImage = noAuthRegistry.RepoName(imageName)
 					})
 
