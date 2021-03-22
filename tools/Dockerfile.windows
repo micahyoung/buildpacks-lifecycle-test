@@ -3,7 +3,7 @@ FROM ${image_tag} as builder
 
 SHELL ["cmd.exe", "/c"]
 
-RUN git clone --branch=v20.10.4 --depth=1 https://github.com/docker/cli c:\gopath\src\github.com\docker\cli && \
+RUN git clone --branch=v20.10.5 --depth=1 https://github.com/docker/cli c:\gopath\src\github.com\docker\cli && \
     mkdir c:\docker-cli\bin && \
     go build -o c:\docker-cli\bin\docker.exe github.com/docker/cli/cmd/docker && \
     rmdir /q /s c:\gopath\src\github.com\docker\cli && \
