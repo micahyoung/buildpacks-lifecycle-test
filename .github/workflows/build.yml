@@ -11,22 +11,22 @@ on:
       - 'release/**'
 
 jobs:
-  test-linux:
-    runs-on: ubuntu-18.04
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up go
-        uses: actions/setup-go@v2
-        with:
-          go-version: '1.15'
-      - name: Install jq
-        run: |
-          mkdir -p deps/bin
-          curl -s -L -o deps/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
-          chmod +x deps/bin/jq
-          echo "${PWD}/deps/bin" >> $GITHUB_PATH
-      - name: Test
-        run: make test
+#  test-linux:
+#    runs-on: ubuntu-18.04
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: Set up go
+#        uses: actions/setup-go@v2
+#        with:
+#          go-version: '1.15'
+#      - name: Install jq
+#        run: |
+#          mkdir -p deps/bin
+#          curl -s -L -o deps/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+#          chmod +x deps/bin/jq
+#          echo "${PWD}/deps/bin" >> $GITHUB_PATH
+#      - name: Test
+#        run: make test
   test-windows:
     runs-on: windows-latest
     steps:
@@ -40,8 +40,16 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '1.15'
-      - name: Install jq
-        run: choco install jq
+      - name: BUGFIX - Downgrade Docker CLI if 20.10.0
+        shell: powershell
+        run: |
+          $dockerVersion=(docker version -f '{{.Client.Version}}')
+          if ($dockerVersion -ne "20.10.0") {
+            echo Newer docker version has been released: $dockerVersion
+            echo Remove this step if greater than: 20.10.5
+          }
+
+          curl.exe -o "$env:USERPROFILE\go\bin\docker.exe" -L https://github.com/StefanScherer/docker-cli-builder/releases/download/19.03.14/docker.exe
       - name: Add runner IP to daemon insecure-registries
         shell: powershell
         run: |
@@ -62,38 +70,38 @@ jobs:
           docker info
       - name: Test
         run: make test
-  build:
-    needs:
-      - test-linux
-      - test-windows
-    runs-on: ubuntu-18.04
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Set up go
-        uses: actions/setup-go@v2
-        with:
-          go-version: '1.15'
-      - name: Build
-        run: |
-          make clean
-          make build
-          make package
-      - uses: actions/upload-artifact@v2
-        with:
-          name: lifecycle-linux-x86-64
-          path: out/lifecycle-v*+linux.x86-64.tgz
-      - uses: actions/upload-artifact@v2
-        with:
-          name: lifecycle-windows-x86-64
-          path: out/lifecycle-v*+windows.x86-64.tgz
-      - name: Publish images
-        if: github.event_name == 'push'
-        run: |
-          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-          LIFECYCLE_IMAGE_TAG=$(git describe --always --dirty)
-          go run ./tools/image/main.go -lifecyclePath ./out/lifecycle-v*+linux.x86-64.tgz -tag buildpacksio/lifecycle:${LIFECYCLE_IMAGE_TAG}-linux
-          go run ./tools/image/main.go -lifecyclePath ./out/lifecycle-v*+windows.x86-64.tgz -tag buildpacksio/lifecycle:${LIFECYCLE_IMAGE_TAG}-windows -os windows
-          DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create buildpacksio/lifecycle:${LIFECYCLE_IMAGE_TAG} buildpacksio/lifecycle:${LIFECYCLE_IMAGE_TAG}-linux buildpacksio/lifecycle:${LIFECYCLE_IMAGE_TAG}-windows
-          DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push buildpacksio/lifecycle:${LIFECYCLE_IMAGE_TAG}
+#  build:
+#    needs:
+#      - test-linux
+#      - test-windows
+#    runs-on: ubuntu-18.04
+#    steps:
+#      - uses: actions/checkout@v2
+#        with:
+#          fetch-depth: 0
+#      - name: Set up go
+#        uses: actions/setup-go@v2
+#        with:
+#          go-version: '1.15'
+#      - name: Build
+#        run: |
+#          make clean
+#          make build
+#          make package
+#      - uses: actions/upload-artifact@v2
+#        with:
+#          name: lifecycle-linux-x86-64
+#          path: out/lifecycle-v*+linux.x86-64.tgz
+#      - uses: actions/upload-artifact@v2
+#        with:
+#          name: lifecycle-windows-x86-64
+#          path: out/lifecycle-v*+windows.x86-64.tgz
+#      - name: Publish images
+#        if: github.event_name == 'push'
+#        run: |
+#          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+#          LIFECYCLE_IMAGE_TAG=$(git describe --always --dirty)
+#          go run ./tools/image/main.go -lifecyclePath ./out/lifecycle-v*+linux.x86-64.tgz -tag buildpacksio/lifecycle:${LIFECYCLE_IMAGE_TAG}-linux
+#          go run ./tools/image/main.go -lifecyclePath ./out/lifecycle-v*+windows.x86-64.tgz -tag buildpacksio/lifecycle:${LIFECYCLE_IMAGE_TAG}-windows -os windows
+#          DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create buildpacksio/lifecycle:${LIFECYCLE_IMAGE_TAG} buildpacksio/lifecycle:${LIFECYCLE_IMAGE_TAG}-linux buildpacksio/lifecycle:${LIFECYCLE_IMAGE_TAG}-windows
+#          DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push buildpacksio/lifecycle:${LIFECYCLE_IMAGE_TAG}
