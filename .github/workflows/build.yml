@@ -58,6 +58,7 @@ jobs:
 
           Restart-Service docker
 
+          docker version
           docker info
       - name: Test
         run: make test
